@@ -161,6 +161,13 @@ def validate_concurrency_config(dagster_config_dict: Mapping[str, Any]):
                 [],
                 None,
             )
+    granularity = concurrency_config.get("pools", {}).get("granularity")
+    if granularity and granularity not in ["run", "op"]:
+        raise DagsterInvalidConfigError(
+            f"Found value `{granularity}` for `granularity`, Expected value 'run' or 'op'.",
+            [],
+            None,
+        )
 
     if "run_queue" in dagster_config_dict:
         verify_config_match(
