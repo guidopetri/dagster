@@ -3100,6 +3100,7 @@ type CompositeSolidDefinition implements ISolidDefinition & SolidContainer {
   inputDefinitions: [InputDefinition!]!
   outputDefinitions: [OutputDefinition!]!
   assetNodes: [AssetNode!]!
+  pools: [String!]!
   id: ID!
   solids: [Solid!]!
   solidHandle(handleID: String!): SolidHandle
@@ -3135,6 +3136,7 @@ interface ISolidDefinition {
   inputDefinitions: [InputDefinition!]!
   outputDefinitions: [OutputDefinition!]!
   assetNodes: [AssetNode!]!
+  pools: [String!]!
 }
 
 type Output {
@@ -3185,6 +3187,7 @@ type SolidDefinition implements ISolidDefinition {
   inputDefinitions: [InputDefinition!]!
   outputDefinitions: [OutputDefinition!]!
   assetNodes: [AssetNode!]!
+  pools: [String!]!
   configField: ConfigTypeField
   requiredResources: [ResourceRequirement!]!
   pool: String
