@@ -80,6 +80,21 @@ def test_component_type_generate_fails_components_lib_package_does_not_exist() -
 
 
 # ########################
+# ##### DOCS
+# ########################
+
+
+def test_component_type_docs_success():
+    with ProxyRunner.test() as runner, isolated_example_code_location_bar(runner):
+        result = runner.invoke(
+            "component-type",
+            "docs",
+            "dagster_components.test.complex_schema_asset",
+        )
+        assert_runner_result(result)
+
+
+# ########################
 # ##### INFO
 # ########################
 
