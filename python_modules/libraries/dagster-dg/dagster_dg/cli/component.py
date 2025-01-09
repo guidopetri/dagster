@@ -1,5 +1,5 @@
 import sys
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any, Optional
 
@@ -23,6 +23,7 @@ from dagster_dg.generate import generate_component_instance
 from dagster_dg.utils import (
     DgClickCommand,
     DgClickGroup,
+    execute_code_location_command,
     json_schema_property_to_click_option,
     not_none,
     parse_json_option,
@@ -269,3 +270,22 @@ def component_list_command(**global_options: object) -> None:
     context = CodeLocationDirectoryContext.from_path(Path.cwd(), dg_context)
     for component_name in context.get_component_instance_names():
         click.echo(component_name)
+
+
+# ########################
+# ##### CHECK
+# ########################
+
+
+@component_group.command(name="check", cls=DgClickCommand)
+@click.argument("paths", nargs=-1, type=click.Path(exists=True))
+@dg_global_options
+def component_check_command(
+    paths: Sequence[str],
+    **global_options: object,
+) -> None:
+    """Check component files against their schemas, showing validation errors."""
+    dg_context = DgContext.from_cli_global_options(global_options)
+    execute_code_location_command(
+        Path.cwd(), ["check", "component", *paths], dg_context, capture_stdout=False
+    )

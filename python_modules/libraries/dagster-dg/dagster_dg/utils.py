@@ -32,7 +32,9 @@ CLI_CONFIG_KEY = "config"
 _CODE_LOCATION_COMMAND_PREFIX: Final = ["uv", "run", "dagster-components"]
 
 
-def execute_code_location_command(path: Path, cmd: Sequence[str], dg_context: "DgContext") -> str:
+def execute_code_location_command(
+    path: Path, cmd: Sequence[str], dg_context: "DgContext", capture_stdout: bool = True
+) -> str:
     full_cmd = [
         *_CODE_LOCATION_COMMAND_PREFIX,
         *(
@@ -44,8 +46,14 @@ def execute_code_location_command(path: Path, cmd: Sequence[str], dg_context: "D
     ]
     with pushd(path):
         result = subprocess.run(
-            full_cmd, stdout=subprocess.PIPE, env=get_uv_command_env(), check=True
+            full_cmd,
+            stdout=subprocess.PIPE if capture_stdout else None,
+            env=get_uv_command_env(),
+            check=True,
         )
+        if not capture_stdout:
+            return ""
+
         return result.stdout.decode("utf-8")
 
 
