@@ -13,7 +13,6 @@ from types import TracebackType
 from typing import AbstractSet, Any, Optional, cast  # noqa: UP035
 
 import dagster._check as check
-from dagster._time import get_current_timestamp
 from dagster._core.definitions.asset_daemon_cursor import (
     AssetDaemonCursor,
     LegacyAssetDaemonCursorWrapper,
@@ -408,7 +407,7 @@ class AssetDaemon(DagsterDaemon):
                     )
                 )
 
-            poll_interval = self._settings["poll_interval_seconds"]
+            poll_interval = self._settings.get("poll_interval_seconds", 1)
 
             while True:
                 start_time = get_current_timestamp()
@@ -443,7 +442,7 @@ class AssetDaemon(DagsterDaemon):
         submit_threadpool_executor: Optional[ThreadPoolExecutor],
         amp_tick_futures: dict[Optional[str], Future],
         debug_crash_flags: SingleInstigatorDebugCrashFlags,
-        poll_interval: int
+        poll_interval: int,
     ):
         instance: DagsterInstance = workspace_process_context.instance
 
@@ -521,10 +520,7 @@ class AssetDaemon(DagsterDaemon):
                 if sensor.get_current_instigator_state(
                     all_sensor_states.get(selector_id)
                 ).is_running:
-                    self._logger.critical("CHECK 1 SENSOR IS RUNNING")
                     sensors_and_repos.append((sensor, repo))
-                else:
-                    self._logger.critical("CHECK 1 SENSOR IS NOT RUNNING")
 
         else:
             sensors_and_repos.append(
@@ -582,7 +578,7 @@ class AssetDaemon(DagsterDaemon):
                     sensor,
                     debug_crash_flags,
                     submit_threadpool_executor,
-                    poll_interval
+                    poll_interval,
                 )
                 amp_tick_futures[selector_id] = future
                 yield
@@ -593,7 +589,7 @@ class AssetDaemon(DagsterDaemon):
                     sensor,
                     debug_crash_flags,
                     submit_threadpool_executor,
-                    poll_interval
+                    poll_interval,
                 )
 
     def _create_initial_sensor_cursors_from_raw_cursor(
@@ -681,7 +677,7 @@ class AssetDaemon(DagsterDaemon):
         sensor: Optional[RemoteSensor],
         debug_crash_flags: SingleInstigatorDebugCrashFlags,  # TODO No longer single instigator
         submit_threadpool_executor: Optional[ThreadPoolExecutor],
-        poll_interval: int
+        poll_interval: int,
     ):
         evaluation_time = get_current_datetime()
 
@@ -870,7 +866,7 @@ class AssetDaemon(DagsterDaemon):
                     debug_crash_flags,
                     is_retry=(retry_tick is not None),
                     submit_threadpool_executor=submit_threadpool_executor,
-                    poll_interval=poll_interval
+                    poll_interval=poll_interval,
                 )
         except Exception:
             error_info = DaemonErrorCapture.process_exception(
@@ -896,7 +892,7 @@ class AssetDaemon(DagsterDaemon):
         debug_crash_flags: SingleInstigatorDebugCrashFlags,
         is_retry: bool,
         submit_threadpool_executor: Optional[ThreadPoolExecutor],
-        poll_interval: int
+        poll_interval: int,
     ):
         evaluation_id = tick.automation_condition_evaluation_id
 
@@ -1030,7 +1026,7 @@ class AssetDaemon(DagsterDaemon):
             debug_crash_flags=debug_crash_flags,
             submit_threadpool_executor=submit_threadpool_executor,
             remote_sensor=sensor,
-            poll_interval=poll_interval
+            poll_interval=poll_interval,
         )
 
         if schedule_storage.supports_auto_materialize_asset_evaluations:
@@ -1115,7 +1111,7 @@ class AssetDaemon(DagsterDaemon):
         debug_crash_flags: SingleInstigatorDebugCrashFlags,
         submit_threadpool_executor: Optional[ThreadPoolExecutor],
         remote_sensor: Optional[RemoteSensor],
-        poll_interval: int
+        poll_interval: int,
     ):
         updated_evaluation_keys = set()
         run_request_execution_data_cache = {}
@@ -1178,12 +1174,9 @@ class AssetDaemon(DagsterDaemon):
                         # many unintentional runs) so we stop submitting runs and will mark the tick as
                         # skipped so that when the sensor is turned back on we don't detect this tick as incomplete
                         # and try to submit the same runs again.
-                        self._logger.critical("CHECK 2 SENSOR IS NOT RUNNING")
                         user_canceled = True
                         break
-                self._logger.critical("CHECK 2 SENSOR IS RUNNING")
                 last_status_poll_time = now
-
 
         evaluations_to_update = [
             evaluations_by_key[asset_key] for asset_key in updated_evaluation_keys
