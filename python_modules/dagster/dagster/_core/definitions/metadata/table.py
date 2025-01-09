@@ -1,10 +1,13 @@
 from collections.abc import Mapping, Sequence
-from typing import NamedTuple, Optional, Union
+from typing import TYPE_CHECKING, NamedTuple, Optional, Union
 
 import dagster._check as check
 from dagster._annotations import PublicAttr, experimental, public
 from dagster._core.definitions.asset_key import AssetKey
 from dagster._serdes.serdes import whitelist_for_serdes
+
+if TYPE_CHECKING:
+    from dagster._core.definitions.events import CoercibleToAssetKey
 
 # ########################
 # ##### TABLE RECORD
@@ -274,7 +277,7 @@ class TableColumnDep(
     NamedTuple(
         "_TableColumnDep",
         [
-            ("asset_key", PublicAttr[AssetKey]),
+            ("asset_key", PublicAttr["CoercibleToAssetKey"]),
             ("column_name", PublicAttr[str]),
         ],
     )
@@ -283,12 +286,12 @@ class TableColumnDep(
 
     def __new__(
         cls,
-        asset_key: AssetKey,
+        asset_key: "CoercibleToAssetKey",
         column_name: str,
     ):
         return super().__new__(
             cls,
-            asset_key=check.inst_param(asset_key, "asset_key", AssetKey),
+            asset_key=AssetKey.from_coercible(asset_key),
             column_name=check.str_param(column_name, "column_name"),
         )
 
