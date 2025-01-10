@@ -7,6 +7,20 @@ from dagster._utils.backoff import backoff
 from dagster._utils.merger import merge_dicts
 
 
+def _arns_match(arn1: Optional[str], arn2: Optional[str]):
+    arn1 = arn1 or ""
+    arn2 = arn2 or ""
+
+    if "/" in arn1:
+        # Remove the "arn:aws:iam::<account id>:role" prefix if present
+        arn1 = "/".join(arn1.split("/")[1:])
+
+    if "/" in arn2:
+        arn2 = "/".join(arn2.split("/")[1:])
+
+    return arn1 == arn2
+
+
 class DagsterEcsTaskDefinitionConfig(
     NamedTuple(
         "_DagsterEcsTaskDefinitionConfig",
@@ -139,6 +153,44 @@ class DagsterEcsTaskDefinitionConfig(
             kwargs.update(dict(volumes=self.volumes))  # pyright: ignore[reportCallIssue,reportArgumentType]
 
         return kwargs
+
+    def matches_other_task_definition_config(self, other: "DagsterEcsTaskDefinitionConfig"):
+        # doesn't match on every field to ensure that subtle differences in the
+        # fields returned from describe_task_definition and the configuration that
+        # we are specifying here don't result in us always registering a new task
+        # definition
+        if not (
+            self.family == other.family
+            and self.image == other.image
+            and self.container_name == other.container_name
+            and self.command == other.command
+            and self.secrets == other.secrets
+            and self.environment == other.environment
+            and _arns_match(self.execution_role_arn, other.execution_role_arn)
+            and _arns_match(self.task_role_arn, other.task_role_arn)
+        ):
+            return False
+
+        if not [
+            (
+                sidecar["name"],
+                sidecar["image"],
+                sidecar.get("environment", []),
+                sidecar.get("secrets", []),
+            )
+            for sidecar in self.sidecars
+        ] == [
+            (
+                sidecar["name"],
+                sidecar["image"],
+                sidecar.get("environment", []),
+                sidecar.get("secrets", []),
+            )
+            for sidecar in other.sidecars
+        ]:
+            return False
+
+        return True
 
     @staticmethod
     def from_task_definition_dict(task_definition_dict, container_name):
