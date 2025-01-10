@@ -33,6 +33,7 @@ from dagster._core.errors import (
     DagsterInvalidInvocationError,
     DagsterInvariantViolationError,
 )
+from dagster._core.storage.tags import GLOBAL_CONCURRENCY_TAG
 from dagster._core.types.dagster_type import DagsterType, DagsterTypeKind
 from dagster._utils import IHasInternalInit
 from dagster._utils.warnings import normalize_renamed_param, preview_warning
@@ -296,7 +297,8 @@ class OpDefinition(NodeDefinition, IHasInternalInit):
     @property
     def pool(self) -> Optional[str]:
         """Optional[str]: The concurrency group for this op."""
-        return self._pool
+        # fallback to fetching from tags for backwards compatibility
+        return self._pool if self._pool else self.tags.get(GLOBAL_CONCURRENCY_TAG)
 
     @property
     def pools(self) -> set[str]:
