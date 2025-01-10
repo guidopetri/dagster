@@ -16,6 +16,7 @@ import {ReactNode, useMemo, useState} from 'react';
 import {GET_SLIM_EVALUATIONS_QUERY} from './GetEvaluationsQuery';
 import {PartitionTagSelector} from './PartitionTagSelector';
 import {QueryfulEvaluationDetailTable} from './QueryfulEvaluationDetailTable';
+import {runTableFiltersForEvaluation} from './runTableFiltersForEvaluation';
 import {
   GetSlimEvaluationsQuery,
   GetSlimEvaluationsQueryVariables,
@@ -174,6 +175,34 @@ const EvaluationDetailDialogContents = ({
 
   const {runIds} = evaluation;
 
+  const body = () => {
+    if (tabId === 'evaluation') {
+      return (
+        <QueryfulEvaluationDetailTable
+          evaluation={evaluation}
+          assetKeyPath={assetKeyPath}
+          selectedPartition={selectedPartition}
+          setSelectedPartition={setSelectedPartition}
+        />
+      );
+    }
+
+    const filter = runTableFiltersForEvaluation(evaluation.runIds);
+    if (filter) {
+      return <RunsFeedTableWithFilters filter={filter} includeRunsFromBackfills={false} />;
+    }
+
+    return (
+      <Box padding={{top: 64}} flex={{direction: 'row', justifyContent: 'center'}}>
+        <NonIdealState
+          icon="run"
+          title="No runs launched"
+          description="No runs were launched by this evaluation."
+        />
+      </Box>
+    );
+  };
+
   return (
     <DialogContents
       onTabChange={setTabId}
@@ -198,21 +227,7 @@ const EvaluationDetailDialogContents = ({
           ) : null}
         </>
       }
-      body={
-        tabId === 'evaluation' ? (
-          <QueryfulEvaluationDetailTable
-            evaluation={evaluation}
-            assetKeyPath={assetKeyPath}
-            selectedPartition={selectedPartition}
-            setSelectedPartition={setSelectedPartition}
-          />
-        ) : (
-          <RunsFeedTableWithFilters
-            filter={{runIds: evaluation.runIds}}
-            includeRunsFromBackfills={true}
-          />
-        )
-      }
+      body={body()}
       viewAllButton={
         viewAllPath ? (
           <AnchorButton to={viewAllPath} icon={<Icon name="automation_condition" />}>
